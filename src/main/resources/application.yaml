@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: CI-CD-DEVOPS
+
+server:
+  port: 9999
