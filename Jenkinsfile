@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        SONAR = 'SonarQube'
+        SonarQube = 'SonarQube'
     }
 
     stages {
@@ -31,14 +31,24 @@ pipeline {
             }
         }
 
+        // stage('SonarQube Analysis') {
+        //     steps {
+        //         withSonarQubeEnv('SonarQube') {
+        //             bat 'mvn sonar:sonar'
+        //         }
+        //     }
+        // }
+
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    bat 'mvn sonar:sonar'
-                }
+                bat '''
+                    mvn clean verify sonar:sonar ^
+                    -Dsonar.projectKey=springboot-cicd-demo ^
+                    -Dsonar.host.url=http://localhost:9000 ^
+                    -Dsonar.token=sqa_5ea45c2276d7a49ddd7f07eb862fe36feeb7a4af
+                '''
             }
         }
-
         stage('Package') {
             steps {
                 bat 'mvn clean package -DskipTests'
