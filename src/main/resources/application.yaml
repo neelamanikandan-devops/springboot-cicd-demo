@@ -3,4 +3,4 @@ spring:
     name: CI-CD-DEVOPS
 
 server:
-  port: 9999
+  port: 8081
