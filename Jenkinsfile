@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        SONAR = 'SonarCloud'
+        SONAR = 'SonarQube'
     }
 
     stages {
@@ -31,9 +31,9 @@ pipeline {
             }
         }
 
-        stage('Sonar Analysis') {
+        stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv("${SONAR}") {
+                withSonarQubeEnv('SonarQube') {
                     bat 'mvn sonar:sonar'
                 }
             }
@@ -41,7 +41,7 @@ pipeline {
 
         stage('Package') {
             steps {
-                bat 'mvn package -DskipTests'
+                bat 'mvn clean package -DskipTests'
             }
         }
 
