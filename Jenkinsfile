@@ -63,12 +63,7 @@ pipeline {
                 '''
             }
         }
-
-        // stage('Approval') {
-        //     steps {
-        //         input message: 'Deploy to Production?'
-        //     }
-        // }
+        
         stage('Approval') {
             steps {
                 script {
