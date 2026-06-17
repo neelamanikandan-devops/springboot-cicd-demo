@@ -53,17 +53,41 @@ pipeline {
             steps {
                 bat 'mvn clean package -DskipTests'
             }
-        }
+        }        
 
         stage('Deploy UAT') {
             steps {
-                bat 'copy target\\*.jar C:\\deploy\\UAT\\CI-CD-DEVOPS-0.0.1-SNAPSHOT.jar'
+                bat '''
+                taskkill /F /IM java.exe || exit 0
+                copy target\\*.jar C:\\deploy\\UAT\\CI-CD-DEVOPS.jar
+                start javaw -jar C:\\deploy\\UAT\\CI-CD-DEVOPS.jar
+                '''
             }
         }
 
+        // stage('Approval') {
+        //     steps {
+        //         input message: 'Deploy to Production?'
+        //     }
+        // }
         stage('Approval') {
             steps {
-                input message: 'Deploy to Production?'
+                script {
+                    def approval = input(
+                        message: 'Deploy to Production?',
+                        ok: 'Proceed',
+                        parameters: [
+                            choice(
+                                name: 'ACTION',
+                                choices: ['DEPLOY', 'REJECT'],
+                                description: 'Select deployment action'
+                            )
+                        ]
+                    )
+                    if (approval == 'REJECT') {
+                        error('Production deployment rejected')
+                    }
+                }
             }
         }
 
