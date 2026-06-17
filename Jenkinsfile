@@ -59,8 +59,7 @@ pipeline {
             steps {
                 bat '''
                 taskkill /F /IM java.exe || exit 0
-                copy target\\*.jar C:\\deploy\\UAT\\CI-CD-DEVOPS.jar
-                start java -jar C:\\deploy\\UAT\\CI-CD-DEVOPS.jar
+                start java -jar C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\springboot-cicd-demo\\target\\CI-CD-DEVOPS-0.0.1-SNAPSHOT.jar
                 '''
             }
         }
