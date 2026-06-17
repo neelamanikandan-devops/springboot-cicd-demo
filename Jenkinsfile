@@ -60,7 +60,7 @@ pipeline {
                 bat '''
                 taskkill /F /IM java.exe || exit 0
                 copy target\\*.jar C:\\deploy\\UAT\\CI-CD-DEVOPS.jar
-                start javaw -jar C:\\deploy\\UAT\\CI-CD-DEVOPS.jar
+                start java -jar C:\\deploy\\UAT\\CI-CD-DEVOPS.jar
                 '''
             }
         }
