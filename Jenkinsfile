@@ -12,12 +12,12 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                url: 'https://github.com/neelamanikandan-devops/springboot-cicd-demo.git'
-            }
-        }
+        //stage('Checkout') {
+            //steps {
+                //git branch: 'main',
+                //url: 'https://github.com/neelamanikandan-devops/springboot-cicd-demo.git'
+            //}
+        //}
 
         stage('Build') {
             steps {
