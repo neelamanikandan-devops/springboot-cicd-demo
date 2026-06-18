@@ -55,16 +55,20 @@ pipeline {
             }
         }        
 
-        stage('Deploy UAT') {
-            steps {
-                bat '''
-                taskkill /F /IM java.exe || exit 0
-                start java -jar C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\springboot-cicd-demo\\target\\CI-CD-DEVOPS-0.0.1-SNAPSHOT.jar
-                '''
-            }
+            stage('Deploy UAT') {
+        steps {
+            bat '''
+            for /f "tokens=2" %%i in ('wmic process where "CommandLine like '%%CI-CD-DEVOPS%%'" get ProcessId ^| findstr [0-9]') do (
+                taskkill /F /PID %%i
+            )
+
+            cmd /c start "" /B java -jar "%WORKSPACE%\\target\\CI-CD-DEVOPS-0.0.1-SNAPSHOT.jar" > C:\\uat.log 2>&1
+
+            echo UAT Deployment Completed
+            '''
         }
-        
-        stage('Approval') {
+    }
+            stage('Approval') {
             steps {
                 script {
                     def approval = input(
