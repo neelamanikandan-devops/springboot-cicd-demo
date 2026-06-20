@@ -48,7 +48,7 @@ jobs:
 
         mvn clean verify sonar:sonar \
         -Dsonar.projectKey=springboot-cicd-demo \
-        -Dsonar.host.url=http://localhost:9000 \
+        -Dsonar.host.url=https://mfaurs9bedi1.shares.zrok.io \
         -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
 
