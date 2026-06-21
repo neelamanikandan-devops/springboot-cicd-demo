@@ -31,8 +31,6 @@ jobs:
         with:
           path: ~/.m2/repository
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            maven-${{ runner.os }}-
 
       - name: Build Project
         run: mvn clean verify
@@ -41,7 +39,8 @@ jobs:
         run: |
           mvn sonar:sonar \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.projectKey=springboot-app
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -50,7 +49,7 @@ jobs:
           path: target/*.jar
 
   deploy-uat:
-    if: github.ref == 'refs/heads/uat'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/uat'
     needs: build-and-analyze
     runs-on: ubuntu-latest
 
@@ -62,7 +61,7 @@ jobs:
             --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}"
 
   deploy-prod:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-and-analyze
     runs-on: ubuntu-latest
 
