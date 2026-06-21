@@ -79,10 +79,12 @@ jobs:
     runs-on: ubuntu-latest
 
     if: |
-      success() &&
       github.event_name == 'push' &&
-      (github.ref == 'refs/heads/uat' ||
-       github.ref == 'refs/heads/main')
+      (
+        github.ref == 'refs/heads/develop' ||
+        github.ref == 'refs/heads/uat' ||
+        github.ref == 'refs/heads/main'
+      )
 
     steps:
       - name: Checkout Source
