@@ -1,0 +1,74 @@
+name: Spring Boot CI/CD
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - uat
+      - main
+
+  pull_request:
+    branches:
+      - uat
+      - main
+
+jobs:
+  build-and-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Build Project
+        run: mvn clean verify
+
+      - name: SonarQube Analysis
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: springboot-artifact
+          path: target/*.jar
+
+  deploy-uat:
+    if: github.ref == 'refs/heads/uat'
+    needs: build-and-analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Jenkins UAT
+        run: |
+          curl -X POST \
+            "${{ secrets.JENKINS_URL }}/job/UAT-Deploy/build" \
+            --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}"
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    needs: build-and-analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Jenkins PROD
+        run: |
+          curl -X POST \
+            "${{ secrets.JENKINS_URL }}/job/PROD-Deploy/build" \
+            --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}"
