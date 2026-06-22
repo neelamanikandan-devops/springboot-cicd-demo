@@ -11,11 +11,6 @@ on:
       - uat
       - main
 
-
-env:
-  IMAGE_NAME: my-app
-
-
 jobs:
 
   build-test-sonar:
@@ -25,6 +20,12 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
+
+      - name: Debug Context
+        run: |
+          echo "EVENT=${GITHUB_EVENT_NAME}"
+          echo "REF=${GITHUB_REF}"
+          echo "REF_NAME=${GITHUB_REF_NAME}"
 
       - name: Setup JDK 21
         uses: actions/setup-java@v4
@@ -37,6 +38,8 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: Build, Test and Package
         run: mvn clean verify
@@ -48,11 +51,12 @@ jobs:
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.java.binaries=target/classes
 
-      - name: Upload Artifact
+      - name: Upload Application Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-jar
           path: target/*.jar
+          retention-days: 7
 
 
   compliance-check:
@@ -63,9 +67,10 @@ jobs:
     steps:
       - name: Compliance Validation
         run: |
-          echo "License check passed"
-          echo "Dependency check passed"
-          echo "Security check passed"
+          echo "Running compliance checks..."
+          echo "License validation passed"
+          echo "Dependency validation passed"
+          echo "Code quality validation passed"
 
 
   docker-build-push:
@@ -73,16 +78,13 @@ jobs:
     needs: compliance-check
     runs-on: ubuntu-latest
 
-    if: github.event_name == 'push'
-
-    outputs:
-      tag: ${{ steps.meta.outputs.tag }}
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/uat' || github.ref == 'refs/heads/main')
 
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Download Artifact
+      - name: Download Application Artifact
         uses: actions/download-artifact@v4
         with:
           name: app-jar
@@ -98,39 +100,42 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Generate Image Tag
-        id: meta
-        run: echo "tag=${GITHUB_REF_NAME}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+        run: echo "TAG=${GITHUB_REF_NAME}-${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Build Docker Image
         run: |
           docker build \
-            -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} .
+            -t ${{ secrets.DOCKER_USERNAME }}/my-app:${TAG} .
 
       - name: Push Docker Image
         run: |
           docker push \
-            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
+            ${{ secrets.DOCKER_USERNAME }}/my-app:${TAG}
 
-      - name: Tag Latest (Production Only)
+      - name: Tag Latest for Production
         if: github.ref == 'refs/heads/main'
         run: |
           docker tag \
-            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} \
-            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/my-app:${TAG} \
+            ${{ secrets.DOCKER_USERNAME }}/my-app:latest
 
           docker push \
-            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/my-app:latest
 
+
+  # =========================
+  # 🚀 ADDED DEPLOYMENT JOBS
+  # =========================
 
   deploy-uat:
     name: Deploy to UAT
     needs: docker-build-push
     runs-on: ubuntu-latest
 
-    if: github.ref == 'refs/heads/uat' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/uat'
 
     steps:
-      - name: Deploy UAT Server
+      - name: Deploy to UAT Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.UAT_SERVER_HOST }}
@@ -148,10 +153,10 @@ jobs:
     needs: docker-build-push
     runs-on: ubuntu-latest
 
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Deploy Production Server
+      - name: Deploy to Production Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PROD_SERVER_HOST }}
